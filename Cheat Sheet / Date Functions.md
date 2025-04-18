@@ -460,3 +460,256 @@ Here are **20 additional tricky SQL date function concepts** not previously cove
 3. **Prefer named time zones** over numeric offsets.
 4. **Use calendar tables** for complex business logic (holidays, fiscal years).
 5. **Document assumptions** about week/month start days and localization.
+
+
+Here are **20 essential SQL code snippets** (with dialect variations) that cover **80% of date-related interview scenarios**, focusing on real-world use cases and edge cases:
+
+---
+
+### **1. Calculate Age Accurately**
+```sql
+-- PostgreSQL
+SELECT EXTRACT(YEAR FROM AGE('2000-02-29'::DATE)) -- Returns 23 in 2023
+
+-- SQL Server
+SELECT DATEDIFF(YEAR, '2000-02-29', GETDATE()) - 
+  CASE WHEN DATEADD(YEAR, DATEDIFF(YEAR, '2000-02-29', GETDATE()), '2000-02-29') > GETDATE() 
+  THEN 1 ELSE 0 END
+```
+
+---
+
+### **2. Last Day of Current Month**
+```sql
+-- MySQL
+SELECT LAST_DAY(CURDATE())
+
+-- SQL Server
+SELECT EOMONTH(GETDATE())
+
+-- PostgreSQL
+SELECT (DATE_TRUNC('MONTH', CURRENT_DATE) + INTERVAL '1 MONTH - 1 DAY')::DATE
+```
+
+---
+
+### **3. First Monday of Month**
+```sql
+-- PostgreSQL
+SELECT DATE_TRUNC('MONTH', CURRENT_DATE) + (7 - EXTRACT(DOW FROM DATE_TRUNC('MONTH', CURRENT_DATE)) + 1) % 7 * INTERVAL '1 DAY'
+
+-- MySQL
+SELECT ADDDATE(LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH), 
+  INTERVAL (8 - DAYOFWEEK(LAST_DAY(CURRENT_DATE - INTERVAL 1 MONTH))) % 7 DAY)
+```
+
+---
+
+### **4. Week Number (ISO Standard)**
+```sql
+-- PostgreSQL
+SELECT EXTRACT(ISOYEAR FROM date_col) AS isoyear, EXTRACT(WEEK FROM date_col) AS isoweek
+
+-- MySQL
+SELECT YEARWEEK(date_col, 3) -- Mode 3 = ISO 8601
+```
+
+---
+
+### **5. Business Days Between Dates (Exclude Weekends)**
+```sql
+-- PostgreSQL
+SELECT COUNT(*) FILTER (WHERE EXTRACT(ISODOW FROM day) < 6)
+FROM generate_series('2023-10-01', '2023-10-31', '1 DAY') AS day
+```
+
+---
+
+### **6. Same Period Last Year (SPLY)**
+```sql
+-- For any date
+SELECT 
+  date_col,
+  DATE_TRUNC('MONTH', date_col) - INTERVAL '1 YEAR' AS sply_month_start,
+  DATE_TRUNC('WEEK', date_col) - INTERVAL '1 YEAR' AS sply_week_start
+```
+
+---
+
+### **7. Last 30 Days (Including Today)**
+```sql
+SELECT *
+FROM sales
+WHERE sale_date BETWEEN CURRENT_DATE - INTERVAL '29 DAY' AND CURRENT_DATE
+```
+
+---
+
+### **8. Extract Time from Timestamp**
+```sql
+-- PostgreSQL
+SELECT date_col::TIME
+
+-- MySQL
+SELECT TIME(date_col)
+
+-- SQL Server
+SELECT CAST(date_col AS TIME)
+```
+
+---
+
+### **9. Format Date for JSON/APIs**
+```sql
+-- Standard
+SELECT TO_CHAR(CURRENT_TIMESTAMP, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+
+-- SQL Server
+SELECT FORMAT(GETDATE(), 'yyyy-MM-ddTHH:mm:ss.fffZ')
+```
+
+---
+
+### **10. Calculate Running 7-Day Average**
+```sql
+SELECT
+  date,
+  AVG(sales) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)
+FROM daily_sales
+```
+
+---
+
+### **11. Handle Time Zones in Queries**
+```sql
+-- MySQL
+SELECT CONVERT_TZ(utc_timestamp, 'UTC', 'America/Los_Angeles')
+
+-- PostgreSQL
+SELECT utc_timestamp AT TIME ZONE 'America/Los_Angeles'
+```
+
+---
+
+### **12. Generate Date Series with Gaps**
+```sql
+-- PostgreSQL
+SELECT generate_series('2023-01-01', '2023-12-31', '1 DAY')::DATE AS date
+LEFT JOIN sales USING (date)
+```
+
+---
+
+### **13. Month-over-Month Growth**
+```sql
+WITH monthly AS (
+  SELECT 
+    DATE_TRUNC('MONTH', date) AS month,
+    SUM(revenue) AS rev
+  FROM sales
+  GROUP BY 1
+)
+SELECT 
+  month,
+  rev,
+  (rev - LAG(rev) OVER (ORDER BY month)) / LAG(rev) OVER (ORDER BY month) AS mom_growth
+FROM monthly
+```
+
+---
+
+### **14. Fiscal Year Calculation**
+```sql
+-- Fiscal year starting April (adjust offset)
+SELECT 
+  CASE 
+    WHEN EXTRACT(MONTH FROM date) >= 4 THEN EXTRACT(YEAR FROM date)
+    ELSE EXTRACT(YEAR FROM date) - 1 
+  END AS fiscal_year
+```
+
+---
+
+### **15. Find Overlapping Date Ranges**
+```sql
+SELECT *
+FROM bookings a
+JOIN bookings b 
+  ON a.start_date < b.end_date 
+  AND a.end_date > b.start_date 
+  AND a.id != b.id
+```
+
+---
+
+### **16. Add Workdays to Date**
+```sql
+-- PostgreSQL (Recursive CTE)
+WITH RECURSIVE workdays AS (
+  SELECT CURRENT_DATE AS day, 5 AS days_left
+  UNION ALL
+  SELECT 
+    day + INTERVAL '1 DAY',
+    days_left - CASE WHEN EXTRACT(ISODOW FROM day + INTERVAL '1 DAY') < 6 THEN 1 ELSE 0 END
+  FROM workdays
+  WHERE days_left > 0
+)
+SELECT MAX(day) FROM workdays
+```
+
+---
+
+### **17. Convert Epoch to Timestamp**
+```sql
+-- PostgreSQL
+SELECT TO_TIMESTAMP(1696500000)
+
+-- MySQL
+SELECT FROM_UNIXTIME(1696500000)
+```
+
+---
+
+### **18. Calculate SLA Breach Time**
+```sql
+-- Exclude weekends and 9 AM-5 PM working hours
+SELECT 
+  created_at,
+  created_at + INTERVAL '4 HOURS' * 
+    (1 + FLOOR((EXTRACT(EPOCH FROM (resolved_at - created_at)) / (8*3600))) AS sla_breach_time
+FROM tickets
+```
+
+---
+
+### **19. Last 12 Months Rolling**
+```sql
+SELECT *
+FROM sales
+WHERE date >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '11 MONTH')
+```
+
+---
+
+### **20. Handle Leap Year in Date Math**
+```sql
+-- Safe year addition
+SELECT 
+  CASE 
+    WHEN EXTRACT(DAY FROM date_col + INTERVAL '1 YEAR') != EXTRACT(DAY FROM date_col)
+    THEN date_col + INTERVAL '1 YEAR' - INTERVAL '1 DAY'
+    ELSE date_col + INTERVAL '1 YEAR'
+  END
+```
+
+---
+
+### **Key Takeaways**
+1. **Window functions** (`LAG`, `LEAD`, `OVER`) are essential for trend analysis.
+2. Always use **DATE_TRUNC** for period grouping.
+3. **Recursive CTEs** solve workday/interval problems.
+4. **Generate_series/Recursive CTEs** handle date gaps.
+5. **Time zone functions** prevent silent data corruption.
+6. **Test edge cases**: month-ends, leap years, DST changes.
+
+These snippets cover date arithmetic, reporting periods, time zones, and edge cases that dominate 80% of real-world scenarios.
