@@ -1,6 +1,3 @@
-Here's a concise, organized cheat sheet for SQL date functions and concepts (focused on standard SQL, with notes on dialect variations):
-
----
 
 ### **1. Core Date Functions**
 - **`CURRENT_DATE`**  
