@@ -4,8 +4,6 @@ Here is a master prompt that can help
 
 Use this prompt with any LLM to generate comprehensive SQL tutorials similar to the Stored Procedures document.
 
----
-
 ## THE PROMPT
 
 ```
@@ -92,8 +90,6 @@ TONE:
 Now generate the complete tutorial for: [TOPIC]
 ```
 
----
-
 ## USAGE INSTRUCTIONS
 
 **Step 1**: Copy the prompt above
@@ -156,8 +152,6 @@ The LLM will generate:
 - System catalog queries
 - Complete working examples
 
----
-
 ## QUICK TOPIC REFERENCE
 
 **Foundational Topics** (start here):
@@ -171,8 +165,6 @@ The LLM will generate:
 
 **Optimization Topics**:
 - EXECUTION PLANS → QUERY OPTIMIZATION → INDEXES → PARTITIONING
-
----
 
 ## CUSTOMIZATION OPTIONS
 
@@ -220,8 +212,6 @@ After generating, verify:
 - [ ] Summary with next steps
 - [ ] Realistic business examples
 
----
-
 ## PRO TIPS
 
 1. **Generate multiple topics in sequence** to build a complete learning path
@@ -229,8 +219,6 @@ After generating, verify:
 3. **Request comparisons** (e.g., "CTEs vs SUBQUERIES vs TEMP TABLES")
 4. **Ask for real-world scenarios** from your actual work
 5. **Request dialect translations** if migrating databases
-
----
 
 ## EXAMPLE OUTPUT STRUCTURE
 
@@ -265,9 +253,6 @@ NEXT STEPS:
 - [Advanced feature]
 */
 ```
-
----
-
 ## SAVE THIS PROMPT
 
 Bookmark or save this master prompt. Whenever you need a tutorial, just:
