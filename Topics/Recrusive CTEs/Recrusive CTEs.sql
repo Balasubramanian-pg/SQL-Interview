@@ -936,3 +936,632 @@ SELECT
 FROM FilePaths
 ORDER BY FullPath;
 GO
+
+-- 6.2 Calculate folder sizes (sum of contained files)
+WITH FolderSizes AS (
+    -- Anchor: All files (non-folders)
+    SELECT 
+        FileID,
+        FileName,
+        ParentFileID,
+        FileSize,
+        0 AS IsFolderAggregate
+    FROM FileSystem
+    WHERE IsFolder = 0
+    
+    UNION ALL
+    
+    -- Recursive: Roll up sizes to parent folders
+    SELECT 
+        f.FileID,
+        f.FileName,
+        f.ParentFileID,
+        fs.FileSize,
+        1 AS IsFolderAggregate
+    FROM FileSystem f
+    INNER JOIN FolderSizes fs ON f.FileID = fs.ParentFileID
+    WHERE f.IsFolder = 1
+)
+SELECT 
+    f.FileName AS FolderName,
+    COUNT(DISTINCT fs.FileID) AS FileCount,
+    SUM(fs.FileSize) AS TotalSize,
+    CASE 
+        WHEN SUM(fs.FileSize) > 1048576 
+            THEN CAST(SUM(fs.FileSize) / 1048576.0 AS DECIMAL(10,2)) + ' MB'
+        WHEN SUM(fs.FileSize) > 1024 
+            THEN CAST(SUM(fs.FileSize) / 1024.0 AS DECIMAL(10,2)) + ' KB'
+        ELSE CAST(SUM(fs.FileSize) AS VARCHAR) + ' bytes'
+    END AS FormattedSize
+FROM FileSystem f
+LEFT JOIN FolderSizes fs ON f.FileID = fs.ParentFileID
+WHERE f.IsFolder = 1
+GROUP BY f.FileID, f.FileName
+HAVING SUM(fs.FileSize) > 0
+ORDER BY TotalSize DESC;
+GO
+
+-- 6.3 Find all files under a specific folder
+WITH FolderContents AS (
+    -- Anchor: Start with specific folder
+    SELECT 
+        FileID,
+        FileName,
+        ParentFileID,
+        IsFolder,
+        FileSize,
+        FileType,
+        0 AS Depth
+    FROM FileSystem
+    WHERE FileID = 3  -- Projects folder
+    
+    UNION ALL
+    
+    -- Recursive: Get all contents
+    SELECT 
+        f.FileID,
+        f.FileName,
+        f.ParentFileID,
+        f.IsFolder,
+        f.FileSize,
+        f.FileType,
+        fc.Depth + 1
+    FROM FileSystem f
+    INNER JOIN FolderContents fc ON f.ParentFileID = fc.FileID
+)
+SELECT 
+    Depth,
+    CASE 
+        WHEN IsFolder = 1 THEN REPLICATE('  ', Depth) + '[+] ' + FileName
+        ELSE REPLICATE('  ', Depth) + '    ' + FileName
+    END AS Item,
+    FileType,
+    CASE 
+        WHEN FileSize > 1048576 THEN CAST(FileSize / 1048576.0 AS DECIMAL(10,2)) + ' MB'
+        WHEN FileSize > 1024 THEN CAST(FileSize / 1024.0 AS DECIMAL(10,2)) + ' KB'
+        ELSE CAST(FileSize AS VARCHAR) + ' bytes'
+    END AS Size
+FROM FolderContents
+ORDER BY IsFolder DESC, FileName;
+GO
+
+-- Section 7: Social Network and Graph Traversal
+--------------------------------------------------------------------
+-- Working with graph data and network analysis
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 7: SOCIAL NETWORK GRAPH TRAVERSAL ===';
+
+-- 7.1 Find friends of friends (2nd degree connections)
+WITH FriendsOfFriends AS (
+    -- Anchor: Direct friends
+    SELECT 
+        c.PersonID,
+        c.FriendID,
+        sn1.PersonName AS Person,
+        sn2.PersonName AS Friend,
+        1 AS Degree,
+        CAST(sn1.PersonName + ' -> ' + sn2.PersonName AS VARCHAR(MAX)) AS Path
+    FROM Connections c
+    INNER JOIN SocialNetwork sn1 ON c.PersonID = sn1.PersonID
+    INNER JOIN SocialNetwork sn2 ON c.FriendID = sn2.PersonID
+    
+    UNION ALL
+    
+    -- Recursive: Friends of friends
+    SELECT 
+        fof.PersonID,
+        c.FriendID,
+        fof.Person,
+        sn.PersonName,
+        fof.Degree + 1,
+        CAST(fof.Path + ' -> ' + sn.PersonName AS VARCHAR(MAX))
+    FROM FriendsOfFriends fof
+    INNER JOIN Connections c ON fof.FriendID = c.PersonID
+    INNER JOIN SocialNetwork sn ON c.FriendID = sn.PersonID
+    WHERE fof.Degree < 3  -- Limit to 3 degrees of separation
+        AND fof.Path NOT LIKE '%' + sn.PersonName + '%'  -- Avoid cycles
+)
+SELECT 
+    Person,
+    Friend AS Connection,
+    Degree,
+    Path
+FROM FriendsOfFriends
+WHERE PersonID = 1  -- Alice's network
+ORDER BY Degree, Friend;
+GO
+
+-- 7.2 Find mutual friends between two people
+WITH AliceFriends AS (
+    -- Alice's friends
+    SELECT FriendID
+    FROM Connections
+    WHERE PersonID = 1  -- Alice
+),
+BobFriends AS (
+    -- Bob's friends
+    SELECT FriendID
+    FROM Connections
+    WHERE PersonID = 2  -- Bob
+),
+MutualFriends AS (
+    -- Mutual friends
+    SELECT af.FriendID
+    FROM AliceFriends af
+    INNER JOIN BobFriends bf ON af.FriendID = bf.FriendID
+)
+SELECT 
+    sn.PersonName AS MutualFriend,
+    c1.Strength AS AliceConnectionStrength,
+    c2.Strength AS BobConnectionStrength,
+    (c1.Strength + c2.Strength) / 2.0 AS AverageStrength
+FROM MutualFriends mf
+INNER JOIN SocialNetwork sn ON mf.FriendID = sn.PersonID
+INNER JOIN Connections c1 ON c1.PersonID = 1 AND c1.FriendID = mf.FriendID
+INNER JOIN Connections c2 ON c2.PersonID = 2 AND c2.FriendID = mf.FriendID
+ORDER BY AverageStrength DESC;
+GO
+
+-- 7.3 Find shortest path between two people
+WITH ShortestPath AS (
+    -- Anchor: Start with source person
+    SELECT 
+        c.PersonID,
+        c.FriendID,
+        1 AS Distance,
+        CAST(sn1.PersonName + ' -> ' + sn2.PersonName AS VARCHAR(MAX)) AS Path,
+        c.FriendID AS TargetCheck
+    FROM Connections c
+    INNER JOIN SocialNetwork sn1 ON c.PersonID = sn1.PersonID
+    INNER JOIN SocialNetwork sn2 ON c.FriendID = sn2.PersonID
+    WHERE c.PersonID = 1  -- Start with Alice
+    
+    UNION ALL
+    
+    -- Recursive: Extend path
+    SELECT 
+        sp.PersonID,
+        c.FriendID,
+        sp.Distance + 1,
+        CAST(sp.Path + ' -> ' + sn.PersonName AS VARCHAR(MAX)),
+        c.FriendID
+    FROM ShortestPath sp
+    INNER JOIN Connections c ON sp.FriendID = c.PersonID
+    INNER JOIN SocialNetwork sn ON c.FriendID = sn.PersonID
+    WHERE sp.Distance < 6  -- Maximum 6 degrees of separation
+        AND sp.Path NOT LIKE '%' + sn.PersonName + '%'  -- Avoid revisiting
+)
+SELECT TOP 1
+    Distance AS DegreesOfSeparation,
+    Path
+FROM ShortestPath
+WHERE FriendID = 8  -- Find path to Henry
+ORDER BY Distance;
+GO
+
+-- Section 8: Nested Set Model and Organization Charts
+--------------------------------------------------------------------
+-- Working with nested set model for efficient tree queries
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 8: NESTED SET MODEL ===';
+
+-- 8.1 Get all descendants of a node using nested set
+WITH OrgDescendants AS (
+    SELECT 
+        NodeID,
+        NodeName,
+        ParentNodeID,
+        NodeType,
+        LeftValue,
+        RightValue,
+        0 AS Depth
+    FROM OrganizationChart
+    WHERE NodeID = 1  -- CEO Office
+    
+    UNION ALL
+    
+    SELECT 
+        oc.NodeID,
+        oc.NodeName,
+        oc.ParentNodeID,
+        oc.NodeType,
+        oc.LeftValue,
+        oc.RightValue,
+        od.Depth + 1
+    FROM OrganizationChart oc
+    INNER JOIN OrgDescendants od ON oc.LeftValue > od.LeftValue 
+        AND oc.RightValue < od.RightValue
+        AND oc.ParentNodeID = od.NodeID
+)
+SELECT 
+    Depth,
+    REPLICATE('  ', Depth) + NodeName AS OrganizationUnit,
+    NodeType,
+    EmployeeCount,
+    Budget,
+    LeftValue,
+    RightValue
+FROM OrgDescendants
+ORDER BY LeftValue;
+GO
+
+-- 8.2 Get management chain using nested set
+SELECT 
+    ancestor.NodeName AS Ancestor,
+    descendant.NodeName AS Descendant,
+    descendant.LeftValue - ancestor.LeftValue AS Depth
+FROM OrganizationChart ancestor
+INNER JOIN OrganizationChart descendant 
+    ON descendant.LeftValue BETWEEN ancestor.LeftValue AND ancestor.RightValue
+WHERE descendant.NodeID = 11  -- Tech Recruitment unit
+ORDER BY ancestor.LeftValue;
+GO
+
+-- 8.3 Calculate aggregated budgets using nested set
+SELECT 
+    ancestor.NodeName AS Department,
+    COUNT(DISTINCT descendant.NodeID) AS SubUnits,
+    SUM(descendant.EmployeeCount) AS TotalEmployees,
+    SUM(descendant.Budget) AS TotalBudget
+FROM OrganizationChart ancestor
+INNER JOIN OrganizationChart descendant 
+    ON descendant.LeftValue BETWEEN ancestor.LeftValue AND ancestor.RightValue
+WHERE ancestor.NodeType = 'Department'
+GROUP BY ancestor.NodeID, ancestor.NodeName
+ORDER BY TotalBudget DESC;
+GO
+
+-- Section 9: Performance and Optimization
+--------------------------------------------------------------------
+-- Optimizing recursive queries and handling large hierarchies
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 9: PERFORMANCE AND OPTIMIZATION ===';
+
+-- 9.1 Using MAXRECURSION hint
+WITH DeepRecursion AS (
+    SELECT 1 AS Level
+    
+    UNION ALL
+    
+    SELECT Level + 1
+    FROM DeepRecursion
+    WHERE Level < 500  -- Deep recursion
+)
+SELECT MAX(Level) AS MaxLevelReached
+FROM DeepRecursion
+OPTION (MAXRECURSION 1000);  -- Increase recursion limit
+GO
+
+-- 9.2 Materialized path pattern (pre-calculated paths)
+-- Create a table with materialized paths
+CREATE TABLE EmployeePaths (
+    EmployeeID INT PRIMARY KEY,
+    ManagerPath VARCHAR(MAX),
+    Depth INT
+);
+GO
+
+-- Populate with recursive CTE
+WITH EmployeeHierarchy AS (
+    SELECT 
+        EmployeeID,
+        ManagerID,
+        1 AS Depth,
+        CAST(EmployeeID AS VARCHAR(MAX)) AS ManagerPath
+    FROM Employees
+    WHERE ManagerID IS NULL
+    
+    UNION ALL
+    
+    SELECT 
+        e.EmployeeID,
+        e.ManagerID,
+        eh.Depth + 1,
+        CAST(eh.ManagerPath + ',' + CAST(e.EmployeeID AS VARCHAR(MAX)) AS VARCHAR(MAX))
+    FROM Employees e
+    INNER JOIN EmployeeHierarchy eh ON e.ManagerID = eh.EmployeeID
+)
+INSERT INTO EmployeePaths (EmployeeID, ManagerPath, Depth)
+SELECT EmployeeID, ManagerPath, Depth
+FROM EmployeeHierarchy;
+GO
+
+-- Query using materialized paths (much faster)
+SELECT 
+    e.EmployeeID,
+    e.FirstName + ' ' + e.LastName AS Employee,
+    ep.Depth,
+    ep.ManagerPath
+FROM Employees e
+INNER JOIN EmployeePaths ep ON e.EmployeeID = ep.EmployeeID
+WHERE ep.ManagerPath LIKE '%,9,%'  -- Find all under Emily (ID 9)
+    OR ep.ManagerPath LIKE '9,%'
+    OR ep.ManagerPath LIKE '%,9'
+    OR ep.ManagerPath = '9'
+ORDER BY ep.ManagerPath;
+GO
+
+-- 9.3 Cycle detection and prevention
+WITH RECURSIVE CycleDetection AS (
+    SELECT 
+        EmployeeID,
+        ManagerID,
+        CAST(EmployeeID AS VARCHAR(MAX)) AS Path,
+        1 AS Depth,
+        0 AS HasCycle
+    FROM Employees
+    
+    UNION ALL
+    
+    SELECT 
+        e.EmployeeID,
+        e.ManagerID,
+        CAST(cd.Path + ',' + CAST(e.EmployeeID AS VARCHAR(MAX)) AS VARCHAR(MAX)),
+        cd.Depth + 1,
+        CASE 
+            WHEN cd.Path LIKE '%' + CAST(e.EmployeeID AS VARCHAR(MAX)) + '%' THEN 1
+            ELSE 0
+        END
+    FROM Employees e
+    INNER JOIN CycleDetection cd ON e.ManagerID = cd.EmployeeID
+    WHERE cd.HasCycle = 0
+        AND cd.Depth < 10  -- Safety limit
+)
+SELECT 
+    EmployeeID,
+    ManagerID,
+    Path,
+    Depth,
+    HasCycle
+FROM CycleDetection
+WHERE HasCycle = 1
+ORDER BY Depth DESC;
+GO
+
+-- Clean up
+DROP TABLE EmployeePaths;
+GO
+
+-- Section 10: Real-World Applications
+--------------------------------------------------------------------
+-- Practical business scenarios using recursive queries
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 10: REAL-WORLD APPLICATIONS ===';
+
+-- 10.1 Organizational reporting structure with contact information
+WITH OrgReport AS (
+    -- Anchor: Top management
+    SELECT 
+        e.EmployeeID,
+        e.FirstName,
+        e.LastName,
+        e.JobTitle,
+        e.ManagerID,
+        e.Department,
+        e.Salary,
+        1 AS Level,
+        CAST(e.FirstName + ' ' + e.LastName AS VARCHAR(MAX)) AS ReportingChain
+    FROM Employees e
+    WHERE e.ManagerID IS NULL
+    
+    UNION ALL
+    
+    -- Recursive: Build reporting chain
+    SELECT 
+        e.EmployeeID,
+        e.FirstName,
+        e.LastName,
+        e.JobTitle,
+        e.ManagerID,
+        e.Department,
+        e.Salary,
+        orp.Level + 1,
+        CAST(orp.ReportingChain + ' -> ' + e.FirstName + ' ' + e.LastName AS VARCHAR(MAX))
+    FROM Employees e
+    INNER JOIN OrgReport orp ON e.ManagerID = orp.EmployeeID
+)
+SELECT 
+    Level,
+    REPLICATE('  ', Level - 1) + FirstName + ' ' + LastName AS Employee,
+    JobTitle,
+    Department,
+    FORMAT(Salary, 'C') AS Salary,
+    ReportingChain
+FROM OrgReport
+ORDER BY ReportingChain;
+GO
+
+-- 10.2 Product category navigation for e-commerce
+WITH CategoryNavigation AS (
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        c.ParentCategoryID,
+        1 AS Level,
+        CAST(c.CategoryName AS NVARCHAR(MAX)) AS Breadcrumb,
+        CAST(c.CategoryID AS VARCHAR(MAX)) AS CategoryPath
+    FROM Categories c
+    WHERE c.ParentCategoryID IS NULL
+    
+    UNION ALL
+    
+    SELECT 
+        c.CategoryID,
+        c.CategoryName,
+        c.ParentCategoryID,
+        cn.Level + 1,
+        CAST(cn.Breadcrumb + ' > ' + c.CategoryName AS NVARCHAR(MAX)),
+        CAST(cn.CategoryPath + ',' + CAST(c.CategoryID AS VARCHAR(MAX)) AS VARCHAR(MAX))
+    FROM Categories c
+    INNER JOIN CategoryNavigation cn ON c.ParentCategoryID = cn.CategoryID
+)
+SELECT 
+    cn.CategoryID,
+    cn.Level,
+    REPLICATE('  ', cn.Level - 1) + cn.CategoryName AS CategoryTree,
+    cn.Breadcrumb,
+    COUNT(p.ProductID) AS ProductCount,
+    STRING_AGG(p.ProductName, ', ') WITHIN GROUP (ORDER BY p.ProductName) AS SampleProducts
+FROM CategoryNavigation cn
+LEFT JOIN Products p ON cn.CategoryID = p.CategoryID
+GROUP BY cn.CategoryID, cn.CategoryName, cn.Level, cn.Breadcrumb, cn.CategoryPath
+ORDER BY cn.CategoryPath;
+GO
+
+-- 10.3 Manufacturing cost roll-up with multiple assemblies
+WITH ManufacturingCost AS (
+    -- Base components with known costs
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        p.Cost AS UnitCost,
+        0 AS AssemblyLevel,
+        CAST(p.ProductName AS NVARCHAR(MAX)) AS ProductionPath
+    FROM Products p
+    WHERE p.IsAssembly = 0
+    
+    UNION ALL
+    
+    -- Calculate assembly costs recursively
+    SELECT 
+        p.ProductID,
+        p.ProductName,
+        SUM(b.Quantity * mc.UnitCost) AS UnitCost,
+        mc.AssemblyLevel + 1,
+        CAST(mc.ProductionPath + ' > ' + p.ProductName AS NVARCHAR(MAX))
+    FROM Products p
+    INNER JOIN BillOfMaterials b ON p.ProductID = b.ParentProductID
+    INNER JOIN ManufacturingCost mc ON b.ComponentProductID = mc.ProductID
+    WHERE p.IsAssembly = 1
+    GROUP BY p.ProductID, p.ProductName, mc.AssemblyLevel, mc.ProductionPath
+)
+SELECT 
+    ProductName,
+    UnitCost,
+    AssemblyLevel,
+    ProductionPath,
+    CASE 
+        WHEN UnitCost > 1000 THEN 'High Cost'
+        WHEN UnitCost > 500 THEN 'Medium Cost'
+        ELSE 'Low Cost'
+    END AS CostCategory
+FROM ManufacturingCost
+WHERE ProductID IN (1, 2, 3)  -- Show only our main products
+ORDER BY AssemblyLevel DESC, UnitCost DESC;
+GO
+
+-- Section 11: Best Practices and Common Pitfalls
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 11: BEST PRACTICES ===';
+
+/*
+BEST PRACTICES FOR RECURSIVE QUERIES:
+
+1. Always include termination condition in WHERE clause
+2. Use MAXRECURSION hint for deep hierarchies
+3. Consider materialized paths for frequently queried hierarchies
+4. Use appropriate indexes on parent/child columns
+5. Limit recursion depth with safety checks
+6. Handle cycles with cycle detection logic
+7. Use UNION ALL (not UNION) for recursive members
+8. Test with edge cases (empty hierarchies, deep nesting)
+
+COMMON PITFALLS:
+1. Infinite recursion (missing termination condition)
+2. Poor performance with deep hierarchies
+3. Not handling cycles in the data
+4. Forgetting to handle NULL parent references
+5. Incorrect column data types in CAST operations
+6. Not considering MAXRECURSION defaults (100)
+
+PERFORMANCE TIPS:
+1. Use filtered indexes on parent/child columns
+2. Consider denormalizing frequently accessed hierarchies
+3. Use nested set model for read-heavy hierarchies
+4. Implement breadth-first search patterns when possible
+5. Cache results of expensive recursive queries
+*/
+
+-- Example: Safe recursive query with all best practices
+WITH SafeRecursion AS (
+    -- Anchor with proper termination
+    SELECT 
+        EmployeeID,
+        FirstName,
+        LastName,
+        ManagerID,
+        1 AS Level,
+        CAST(EmployeeID AS VARCHAR(MAX)) AS Path,
+        0 AS HasCycle
+    FROM Employees
+    WHERE ManagerID IS NULL
+    
+    UNION ALL
+    
+    -- Recursive with cycle detection and depth limit
+    SELECT 
+        e.EmployeeID,
+        e.FirstName,
+        e.LastName,
+        e.ManagerID,
+        sr.Level + 1,
+        CAST(sr.Path + ',' + CAST(e.EmployeeID AS VARCHAR(MAX)) AS VARCHAR(MAX)),
+        CASE 
+            WHEN sr.Path LIKE '%' + CAST(e.EmployeeID AS VARCHAR(MAX)) + '%' THEN 1
+            ELSE 0
+        END
+    FROM Employees e
+    INNER JOIN SafeRecursion sr ON e.ManagerID = sr.EmployeeID
+    WHERE sr.HasCycle = 0
+        AND sr.Level < 20  -- Safety depth limit
+)
+SELECT 
+    Level,
+    FirstName + ' ' + LastName AS Employee,
+    Path,
+    CASE HasCycle 
+        WHEN 1 THEN 'CYCLE DETECTED'
+        ELSE 'OK'
+    END AS CycleStatus
+FROM SafeRecursion
+ORDER BY Path;
+GO
+
+-- Section 12: Summary and Next Steps
+--------------------------------------------------------------------
+
+PRINT '=== SECTION 12: SUMMARY ===';
+
+/*
+RECURSIVE QUERY PATTERNS COVERED:
+1. Hierarchical data (employees, categories)
+2. Tree structures (file systems, organization charts)
+3. Graph traversal (social networks)
+4. Bill of Materials (multi-level assemblies)
+5. Nested set model optimization
+6. Materialized paths for performance
+
+KEY CONCEPTS:
+1. Anchor and recursive members
+2. Termination conditions
+3. Cycle detection and prevention
+4. Depth calculation and limiting
+5. Path building and aggregation
+6. Performance optimization techniques
+
+NEXT STEPS TO EXPLORE:
+1. Graph databases for complex relationships
+2. Temporal hierarchies (changes over time)
+3. Parallel processing of recursive queries
+4. Integration with application layer caching
+5. Machine learning on graph structures
+*/
+
+-- Final cleanup
+PRINT 'Tutorial completed successfully!';
+GO
