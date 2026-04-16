@@ -1,0 +1,3 @@
+# DELETE
+
+**Description:** Remove rows.
