@@ -1,8 +1,8 @@
 ## PROBLEM STATEMENT	
 A pizza company is taking orders from customers, and each pizza ordered is added to their database as a separate order.	
 - Each order has an associated status, "CREATED or SUBMITTED or DELIVERED'. 	
-- An order's Final_ Status is calculated based on status as follows:	
-		- When all orders for a customer have a status of DELIVERED, that customer's order has a Final_Status of COMPLETED.
+- An order's Final_ Status is calculated based on status as follows:
+  - When all orders for a customer have a status of DELIVERED, that customer's order has a Final_Status of COMPLETED.
 		- If a customer has some orders that are not DELIVERED and some orders that are DELIVERED, the Final_ Status is IN PROGRESS.
 		- If all of a customer's orders are SUBMITTED, the Final_Status is AWAITING PROGRESS.
 		- Otherwise, the Final Status is AWAITING SUBMISSION.
