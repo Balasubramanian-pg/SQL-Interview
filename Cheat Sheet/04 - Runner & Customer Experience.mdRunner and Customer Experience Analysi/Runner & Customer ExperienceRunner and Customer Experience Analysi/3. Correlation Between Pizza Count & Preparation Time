@@ -1,0 +1,32 @@
+## 3. Correlation Between Pizza Count and Preparation Time
+
+**Objective:** Examine if there's a relationship between the number of pizzas ordered and preparation time.
+
+```sql
+WITH prepare_time AS (
+    SELECT 
+        c.order_id, 
+        COUNT(c.order_id) AS no_pizza_ordered, 
+        c.order_time, 
+        r.pickup_time, 
+        DATEDIFF(MINUTE, c.order_time, r.pickup_time) AS time_taken_to_prepare
+    FROM #customer_orders AS c
+    JOIN #runner_orders AS r
+        ON c.order_id = r.order_id
+    WHERE r.distance != 0
+    GROUP BY c.order_id, c.order_time, r.pickup_time
+)
+SELECT 
+    no_pizza_ordered, 
+    AVG(time_taken_to_prepare) AS avg_time_to_prepare
+FROM prepare_time
+WHERE time_taken_to_prepare > 1
+GROUP BY no_pizza_ordered;
+```
+
+**Explanation:**
+- The `COUNT` function determines the number of pizzas ordered per order.
+- The `DATEDIFF` calculates the time taken to prepare the orders.
+- Averages are grouped by the number of pizzas ordered.
+
+**Improvement:** Adding a statistical test (e.g., correlation coefficient) can quantify the relationship.
