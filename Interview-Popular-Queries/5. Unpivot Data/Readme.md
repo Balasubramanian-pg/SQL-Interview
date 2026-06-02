@@ -1,5 +1,8 @@
-QUERY 5	Ungroup the given input data
-PROBLEM STATEMENT	Ungroup the given input data. Display the result as per expected output
+# QUERY 5	
+## Ungroup the given input data
+
+### PROBLEM STATEMENT	
+Ungroup the given input data. Display the result as per expected output
 
 ![image](https://github.com/user-attachments/assets/b4afe78d-e3fe-4614-bdc4-ba35cbd8959c)
 
