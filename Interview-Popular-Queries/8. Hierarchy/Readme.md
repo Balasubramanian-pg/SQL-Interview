@@ -1,5 +1,6 @@
-QUERY 8	Find the hierarchy
-PROBLEM STATEMENT	Find the hierarchy of employees under a given manager "Asha".
+# Find the hierarchy
+## PROBLEM STATEMENT	
+Find the hierarchy of employees under a given manager "Asha".
 
 
 # SQL Query to Find Employee Hierarchy Under "Asha"
