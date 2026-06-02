@@ -1,0 +1,23 @@
+# Human Traffic of Stadium
+**Problem**: Find dates with > 100 people for 3+ consecutive days.  
+**Key Date Functions**: `DATEDIFF`, `ROW_NUMBER`  
+**Solution**:
+```sql
+WITH temp AS (
+    SELECT 
+        id, visit_date, people,
+        id - ROW_NUMBER() OVER (ORDER BY visit_date) AS grp
+    FROM Stadium
+    WHERE people >= 100
+)
+SELECT id, visit_date, people
+FROM temp
+WHERE grp IN (
+    SELECT grp
+    FROM temp
+    GROUP BY grp
+    HAVING COUNT(*) >= 3
+);
+```
+**Breakdown**:  
+- Uses `ROW_NUMBER()` and arithmetic to group consecutive days (similar to **Active Users** pattern).
