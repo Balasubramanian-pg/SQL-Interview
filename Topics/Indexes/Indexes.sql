@@ -1,5 +1,3 @@
-```sql
-/*
 ================================================================================
 COMPREHENSIVE SQL INDEXES TUTORIAL
 Author: SQL Expert
