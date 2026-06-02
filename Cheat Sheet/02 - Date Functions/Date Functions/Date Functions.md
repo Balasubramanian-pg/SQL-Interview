@@ -1,30 +1,4 @@
-### **5. Common Scenarios**
-1. **Age Calculation**  
-   ```sql
-   SELECT EXTRACT(YEAR FROM AGE('2000-05-15')) -- PostgreSQL
-   SELECT DATEDIFF(YEAR, '2000-05-15', GETDATE()) -- SQL Server
-   ```
 
-2. **First Day of Month**  
-   ```sql
-   SELECT DATE_TRUNC('month', CURRENT_DATE) -- PostgreSQL
-   SELECT DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) -- SQL Server
-   ```
-
-3. **Group by Week**  
-   ```sql
-   SELECT DATE_TRUNC('week', date_column), COUNT(*) 
-   FROM table GROUP BY 1 -- PostgreSQL
-   ```
-
-4. **Business Days (Exclude Weekends)**  
-   ```sql
-   SELECT COUNT(*) 
-   FROM dates
-   WHERE DAYOFWEEK(date) NOT IN (1, 7) -- 1=Sunday (MySQL)
-   ```
-
----
 
 ### **6. Dialect-Specific Notes**
 - **MySQL**: Uses `%` specifiers in `DATE_FORMAT` (e.g., `%Y` for year).  
