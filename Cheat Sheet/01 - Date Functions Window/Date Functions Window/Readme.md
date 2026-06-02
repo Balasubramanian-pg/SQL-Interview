@@ -21,24 +21,6 @@ HAVING COUNT(*) >= 5;
 
 ---
 
-### **3. Monthly Transactions (LeetCode 1193: Monthly Transactions I)**
-**Problem**: Report monthly transactions count and total amount.  
-**Key Date Functions**: `DATE_FORMAT`  
-**Solution**:
-```sql
-SELECT 
-    DATE_FORMAT(trans_date, '%Y-%m') AS month,
-    country,
-    COUNT(*) AS trans_count,
-    SUM(amount) AS trans_total_amount
-FROM Transactions
-GROUP BY month, country;
-```
-**Breakdown**:  
-- `DATE_FORMAT(trans_date, '%Y-%m')` groups transactions by year-month (e.g., `2023-10`).
-
----
-
 ### **4. Restaurant Growth (LeetCode 1321: Restaurant Growth)**
 **Problem**: Compute moving average revenue over a 7-day window.  
 **Key Date Functions**: `RANGE INTERVAL`, `BETWEEN`  
