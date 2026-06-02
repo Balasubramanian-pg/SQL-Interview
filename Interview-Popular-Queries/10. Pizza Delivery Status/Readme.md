@@ -1,13 +1,13 @@
-PROBLEM STATEMENT	A pizza company is taking orders from customers, and each pizza ordered is added to their database as a separate order.	
-	Each order has an associated status, "CREATED or SUBMITTED or DELIVERED'. 	
-	An order's Final_ Status is calculated based on status as follows:	
+## PROBLEM STATEMENT	
+A pizza company is taking orders from customers, and each pizza ordered is added to their database as a separate order.	
+- Each order has an associated status, "CREATED or SUBMITTED or DELIVERED'. 	
+- An order's Final_ Status is calculated based on status as follows:	
 		1. When all orders for a customer have a status of DELIVERED, that customer's order has a Final_Status of COMPLETED.
 		2. If a customer has some orders that are not DELIVERED and some orders that are DELIVERED, the Final_ Status is IN PROGRESS.
 		3. If all of a customer's orders are SUBMITTED, the Final_Status is AWAITING PROGRESS.
 		4. Otherwise, the Final Status is AWAITING SUBMISSION.
 		
-	Write a query to report the customer_name and Final_Status of each customer's arder. Order the results by customer	
-	name.	
+Write a query to report the customer_name and Final_Status of each customer's arder. Order the results by customer name.	
 
 ![image](https://github.com/user-attachments/assets/c21f9669-6e42-449b-9d24-f200ba323688)
 
