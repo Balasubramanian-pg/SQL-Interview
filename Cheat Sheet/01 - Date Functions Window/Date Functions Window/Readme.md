@@ -21,24 +21,6 @@ HAVING COUNT(*) >= 5;
 
 ---
 
-### **4. Restaurant Growth (LeetCode 1321: Restaurant Growth)**
-**Problem**: Compute moving average revenue over a 7-day window.  
-**Key Date Functions**: `RANGE INTERVAL`, `BETWEEN`  
-**Solution**:
-```sql
-SELECT 
-    visited_on,
-    SUM(amount) OVER (ORDER BY visited_on RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW) AS amount,
-    ROUND(AVG(amount) OVER (ORDER BY visited_on RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW), 2) AS average_amount
-FROM (
-    SELECT visited_on, SUM(amount) AS amount
-    FROM Customer
-    GROUP BY visited_on
-) t;
-```
-**Breakdown**:  
-- `RANGE BETWEEN INTERVAL 6 DAY PRECEDING` creates a 7-day window (current day + 6 preceding days).
-
 ---
 
 ### **5. Human Traffic of Stadium (LeetCode 601)**
