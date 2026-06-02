@@ -1,26 +1,3 @@
-### **1. Consecutive Logins (LeetCode 550: Game Play Analysis IV)**
-**Problem**: Find the fraction of players who logged in again the day after their first login.  
-**Key Date Functions**: `DATEDIFF`, `MIN`, `DATE_ADD`  
-**Solution**:
-```sql
-SELECT ROUND(
-    COUNT(DISTINCT CASE WHEN DATEDIFF(a.event_date, first_login) = 1 THEN a.player_id END) 
-    / COUNT(DISTINCT a.player_id), 2
-) AS fraction
-FROM Activity a
-JOIN (
-    SELECT player_id, MIN(event_date) AS first_login
-    FROM Activity
-    GROUP BY player_id
-) t 
-ON a.player_id = t.player_id;
-```
-**Breakdown**:  
-- `MIN(event_date)` finds the first login date.  
-- `DATEDIFF` checks if subsequent logins are exactly 1 day after the first login.  
-
----
-
 ### **2. Active Users (LeetCode 1454: Active Users)**
 **Problem**: Find users active for 5+ consecutive days.  
 **Key Date Functions**: `DATE_SUB`, `ROW_NUMBER`, `GROUP_CONCAT`  
