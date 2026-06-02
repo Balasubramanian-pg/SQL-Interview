@@ -1,12 +1,3 @@
-
-
-### **6. Dialect-Specific Notes**
-- **MySQL**: Uses `%` specifiers in `DATE_FORMAT` (e.g., `%Y` for year).  
-- **PostgreSQL**: Prefers `DATE_TRUNC` and `INTERVAL '1 day'`.  
-- **SQL Server**: Uses `DATEPART`, `DATEADD`, and `DATEDIFF` with different syntax.
-
----
-
 **Key Interview Traps**  
 - Mixing `DATE` and `TIMESTAMP` types.  
 - Assuming `DATEDIFF` counts 24-hour periods (it counts crossed boundaries).  
