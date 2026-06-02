@@ -29,36 +29,3 @@ FROM ungrouped
 ORDER BY id, iteration;
 ```
 
-### Solution 2: Using CROSS JOIN with Series
-```sql
-SELECT 
-    i.id,
-    i.item_name,
-    1 AS count_per_item
-FROM 
-    items i
-CROSS JOIN 
-    generate_series(1, i.total_count) AS s(n)
-ORDER BY 
-    i.id, s.n;
-```
-
-## Expected Output
-```
-id | item_name  | count_per_item
----|------------|--------------
-1  | Water Bottle | 1
-1  | Water Bottle | 1
-2  | Tent         | 1
-3  | Apple        | 1
-3  | Apple        | 1
-3  | Apple        | 1
-3  | Apple        | 1
-```
-
-The solutions work by:
-1. Generating a series of numbers up to the maximum count
-2. Joining each item with numbers up to its total_count
-3. Returning one row per count with a value of 1 in count_per_item
-
-The CROSS JOIN with generate_series (Solution 2) is typically the most efficient approach for this transformation.
