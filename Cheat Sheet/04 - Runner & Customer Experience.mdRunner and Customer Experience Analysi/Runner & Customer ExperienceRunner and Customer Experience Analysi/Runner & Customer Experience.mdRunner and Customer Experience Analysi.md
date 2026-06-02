@@ -1,32 +1,3 @@
-# Runner and Customer Experience Analysis
-
-This document provides detailed SQL queries and explanations to analyze various aspects of the runner and customer experience. Each query is thoroughly commented, and visual aids are included to simplify understanding.
-
----
-
-## 1. Weekly Runner Signups
-
-**Objective:** Determine how many runners signed up during each one-week period starting from January 1, 2021.
-
-```sql
-SELECT 
-    runner_id,
-    CASE
-        WHEN registration_date BETWEEN '2021-01-01' AND '2021-01-07' THEN 'Week 1'
-        WHEN registration_date BETWEEN '2021-01-08' AND '2021-01-14' THEN 'Week 2'
-        ELSE 'Week 3'
-    END AS runner_signups
-FROM runners
-GROUP BY registration_date, runner_id;
-```
-
-**Explanation:**
-- The `CASE` statement segments the registration dates into weekly periods.
-- Each runner ID is grouped by the registration date to count signups per week.
-
-**Improvement:** Using a dynamic date function for flexible periods would make the query more reusable.
-
----
 
 ## 2. Average Arrival Time to HQ
 
