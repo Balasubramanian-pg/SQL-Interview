@@ -1,4 +1,4 @@
-### Solution 1: Using DISTINCT with CASE
+### Solution 2: Using DISTINCT with CASE
 ```sql
 SELECT DISTINCT
     LEAST(source, destination) AS city1,
