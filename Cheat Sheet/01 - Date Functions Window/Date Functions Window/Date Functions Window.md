@@ -1,10 +1,3 @@
-
-
-
-Here’s a breakdown of **top LeetCode-style questions** where date functions are critical, with solutions and explanations of how MySQL date functions are applied:
-
----
-
 ### **1. Consecutive Logins (LeetCode 550: Game Play Analysis IV)**
 **Problem**: Find the fraction of players who logged in again the day after their first login.  
 **Key Date Functions**: `DATEDIFF`, `MIN`, `DATE_ADD`  
