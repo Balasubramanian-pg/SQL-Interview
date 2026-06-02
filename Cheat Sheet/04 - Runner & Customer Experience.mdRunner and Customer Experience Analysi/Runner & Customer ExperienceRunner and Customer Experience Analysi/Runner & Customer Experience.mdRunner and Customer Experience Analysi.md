@@ -1,38 +1,3 @@
-
-## 2. Average Arrival Time to HQ
-
-**Objective:** Calculate the average time (in minutes) it takes runners to arrive at Pizza Runner HQ to pick up orders.
-
-```sql
-WITH time_taken AS (
-    SELECT 
-        r.runner_id, 
-        c.order_id, 
-        c.order_time, 
-        r.pickup_time, 
-        DATEDIFF(MINUTE, c.order_time, r.pickup_time) AS mins_taken_to_arrive_HQ
-    FROM #customer_orders AS c
-    JOIN #runner_orders AS r
-        ON c.order_id = r.order_id
-    WHERE r.distance != 0
-)
-SELECT 
-    runner_id, 
-    AVG(mins_taken_to_arrive_HQ) AS avg_mins_taken_to_arrive_HQ
-FROM time_taken
-WHERE mins_taken_to_arrive_HQ > 1
-GROUP BY runner_id;
-```
-
-**Explanation:**
-- The `DATEDIFF` function calculates the time difference in minutes between order and pickup times.
-- The `WHERE` clause ensures only valid distances and meaningful data are included.
-- Averages are calculated for each runner.
-
-**Improvement:** Consider filtering out outliers (e.g., extremely high times) to avoid skewed averages.
-
----
-
 ## 3. Correlation Between Pizza Count and Preparation Time
 
 **Objective:** Examine if there's a relationship between the number of pizzas ordered and preparation time.
