@@ -1,24 +1,4 @@
 
-### **1. Core Date Functions**
-- **`CURRENT_DATE`**  
-  Returns current date (without time).  
-  *MySQL: `CURDATE()`, SQL Server: `GETDATE()`*
-
-- **`CURRENT_TIME`**  
-  Returns current time (without date).  
-  *MySQL: `CURTIME()`*
-
-- **`CURRENT_TIMESTAMP`**  
-  Returns current date and time.  
-  *MySQL: `NOW()`, SQL Server: `GETDATE()`*
-
-- **`EXTRACT(field FROM date)`**  
-  Extracts a component (e.g., `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`).  
-  ```sql
-  SELECT EXTRACT(MONTH FROM '2023-10-05') -- Returns 10
-  ```
-
----
 
 ### **2. Date Formatting**
 - **`TO_CHAR(date, format)`** (PostgreSQL)  
@@ -35,8 +15,6 @@
   SELECT STR_TO_DATE('05-10-2023', '%d-%m-%Y') -- 2023-10-05
   ```
 
----
-
 ### **3. Date Arithmetic**
 - **`DATE_ADD(date, INTERVAL n unit)`** (MySQL)  
   Adds time intervals.  
@@ -51,8 +29,6 @@
   ```sql
   SELECT DATEDIFF('2023-10-10', '2023-10-05') -- 5 days (MySQL)
   ```
-
----
 
 ### **4. Tricky Concepts**
 - **Time Zones**  
