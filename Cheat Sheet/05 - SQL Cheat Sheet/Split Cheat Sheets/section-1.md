@@ -1,0 +1,1 @@
+Below is a cheat sheet highlighting some of the most important SQL functions along with their uses and small examples:
