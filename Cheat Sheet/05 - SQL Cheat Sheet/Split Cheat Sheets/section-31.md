@@ -1,0 +1,1 @@
+Below is a further advanced SQL cheat sheet highlighting additional powerful SQL techniques and features:
