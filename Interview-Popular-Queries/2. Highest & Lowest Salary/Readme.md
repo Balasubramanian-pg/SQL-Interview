@@ -1,6 +1,10 @@
-QUERY 2	Display highest and lowest salary
-PROBLEM STATEMENT	From the given employee table, display the highest and lowest salary corresponding to each department. Return the result corresponding to each employee record
+# QUERY 2-	Display highest and lowest salary
+
+## PROBLEM STATEMENT	
+From the given employee table, display the highest and lowest salary corresponding to each department. Return the result corresponding to each employee record
+
 ![image](https://github.com/user-attachments/assets/cf30e82c-cba8-4b23-9881-b3b565ef774c)
+
 # 7 Solutions to Display Highest and Lowest Salary by Department
 
 ## Problem Understanding
